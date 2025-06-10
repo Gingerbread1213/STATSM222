@@ -1,0 +1,159 @@
+---
+title: "Week 1 Exercise"
+author: "Haojie Liu"
+date: "2025-04-09"
+output: pdf_document
+---
+
+# Exercise 1
+
+### Data Prepration
+
+```{r}
+# install.packages('dslabs')
+library(dslabs)
+library(tidyverse)
+# data(package = "dslabs") 
+# data(Dslabs)
+
+# comment out for successful knit
+
+co2 %>% head()
+
+# help("head")
+# help(co2)
+
+data(murders)
+head(murders)
+
+```
+### Data summary
+```{r}
+data(temp_carbon)
+str(temp_carbon)
+head(temp_carbon)
+
+plot(temp_carbon$carbon_emissions, temp_carbon$temp_anomaly)
+```
+
+### Regression model
+```{r}
+lm1 <- lm(temp_anomaly ~ carbon_emissions, data = temp_carbon)
+
+with(temp_carbon, plot(carbon_emissions, temp_anomaly))
+abline(lm1)
+
+lm1
+```
+
+We can see that there is a positive relationship between temp_anomaly and carbon_emissions with a coefficient of 9.994-e05.
+
+
+# Exercise 2
+
+```{r}
+pi %>% print()
+
+r <- 5
+area <- pi * r^2
+area
+```
+
+```{r}
+a <- c(1, 2, 5, 3, 6, -2, 4)
+b <- c('one', 'two', 'three')
+c <- c(TRUE, TRUE, TRUE, FALSE, TRUE, FALSE)
+
+a6 <- a[6]
+print(a6)
+
+c123 <- c[c(1,2,3)]
+print(c123)
+
+d <- c(1:10)
+print(d)
+
+intby2 <- seq(from=0, to=20, by=2)
+print(intby2)
+
+seq2 <- seq(from=1.0, to=2.0, length.out=10)
+print(seq2)
+
+# help(seq)
+
+args(matrix)
+matrix1 <- matrix(1:20, nrow = 5 , 4)
+print(matrix1)
+
+
+cells <- c(1,26, 24, 68)
+rnames <- c("R1", "R2")
+cnames <- c("C1", "C2")
+matrix2 <- matrix(cells, nrow=2, ncol=2, byrow=T, dimnames=list(rnames, cnames))
+print(matrix2)
+
+v1 <- rowSums(matrix1)
+print(v1)
+
+c1 <- colSums(matrix1)
+print(c1)
+```
+
+```{r}
+msa_name <- c("New York", "Los Angeles", "Chicago", "Dallas", "Houston", "Washington DC",
+"Philadelphia", "Miami", "Atlanta", "Boston")
+lon <- c(-74.567, -118.752, -88.331, -97.091, -95.248, -76.939, -75.25, -80.106, -84.271, -71.033)
+lat <- c(40.68, 34.14, 42.18, 32.672, 29.422, 38.855, 39.883, 26.41, 34.068, 42.366)
+pop2020 <- c(20140470, 13200989, 9618502, 7636387, 7122240, 6385162, 6245051, 6183333, 6089815,
+5)
+
+pop2020[10] <- 4941632
+print(pop2020)
+
+mydata1 <- data.frame(msa_name, lon, lat, pop2020)
+str(mydata1)
+head(mydata1)
+
+```
+
+
+```{r}
+# write.csv(mydata1, row.names=F)
+# setwd("C:/classes/MAGIST413/R413")
+# write.csv(mydata1, "mydata1.csv", row.names=F)
+# mydata1 <‐ read.csv("mydata1.csv")
+# newfile <‐ read.csv(“http://www.example.com/data.csv”)
+```
+
+```{r}
+str(mtcars)
+plot(mtcars$wt, mtcars$mpg)
+
+attach(mtcars)
+plot(wt, mpg)
+detach(mtcars)
+```
+```{r}
+# ls()
+# rm(object name)
+newobject1 <- cbind(lon, lat)
+newobject2 <- rbind(lon[1], lat[1])
+```
+
+
+# Exercise 3
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+

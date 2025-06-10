@@ -1,0 +1,265 @@
+---
+title: "HW3"
+author: "Haojie Liu"
+date: "2025-05-06"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo      = FALSE,
+  message   = FALSE,
+  warning   = FALSE,
+  fig.align = 'center'
+)
+```
+
+
+Open RStudio and install the packages “spatstat” and “maptools”. Then load the libraries for these two packages. Also load the library “sf” that you have previously installed.
+
+```{r message=FALSE, warning=FALSE}
+# install.packages("spatstat")
+# install.packages("maptools")
+# maptools is no longer avaliable use sf instead
+# install.packages("sf")
+
+library(spatstat)
+library(sf)
+```
+
+
+### 1. Open the spatstat data file “ponderosa”.
+
+```{r}
+data("ponderosa")
+```
+
+#### A. Plot the point pattern and interpret it.
+
+```{r}
+plot(ponderosa, main = "Ponderosa Point Pattern")
+```
+
+The point pattern of ponderosa pine trees shows an uneven spatial distribution with visible clusters, particularly in the left regions of the study area. This suggests that the trees are not randomly distributed but may exhibit a tendency to aggregate.
+
+#### B. Generate kernel density estimates for this point pattern. Show and discuss the effects of choosing two different types of kernel and two different smoothing bandwidths.
+
+```{r warning=FALSE}
+# Set bandwidths
+sigma_small <- 2
+sigma_large <- 10
+
+# Compute densities with two kernels and two bandwidths
+epane_small <- density(ponderosa, sigma = sigma_small, kernel = "epanechnikov")
+epane_large <- density(ponderosa, sigma = sigma_large, kernel = "epanechnikov")
+gaus_small  <- density(ponderosa, sigma = sigma_small, kernel = "gaussian")
+gaus_large  <- density(ponderosa, sigma = sigma_large, kernel = "gaussian")
+
+par(mfrow = c(2, 2), mar = c(3, 3, 2, 1))
+
+plot(epane_small, main = "Epanechnikov (sigma = 2)")
+plot(epane_large, main = "Epanechnikov (sigma = 10)")
+plot(gaus_small,  main = "Gaussian (sigma = 2)")
+plot(gaus_large,  main = "Gaussian (sigma = 10)")
+
+```
+
+The four maps make two things clear. First, how much you smooth the data changes what you see: with tight smoothing you get lots of small, bright spots showing the little clumps of trees, but with loose smoothing those spots blur together into wide hills that show only the big, overall patterns. Second, the smoothing “shape” you pick also matters: the Epanechnikov shape only looks at trees within a fixed distance, so its hills have flat tops and sharp edges, while the Gaussian shape takes every tree into account—just giving farther ones less weight—so its hills are rounder and fade away more gently.
+
+#### C. Overlay a grid of 5x5 quadrats over the ponderosa point pattern and plot the points and counts in the quadrats.
+
+```{r}
+Q <- quadratcount(ponderosa, nx = 5, ny = 5)
+
+par(mfrow = c(1, 2), mar = c(4, 4, 2, 1))
+
+plot(ponderosa, main = "Ponderosa: Points with 5×5 Quadrats")
+plot(Q, add = TRUE, border = "grey")
+
+plot(ponderosa$window, type = "n", main = "Quadrat Counts (5×5)")
+plot(Q, add = TRUE, col = "lightgrey", border = "black")
+
+win     <- ponderosa$window
+xr      <- win$xrange;  yr <- win$yrange
+dx      <- diff(xr) / 5; dy <- diff(yr) / 5
+x_cent  <- seq(xr[1] + dx/2, xr[2] - dx/2, length.out = 5)
+y_cent  <- seq(yr[1] + dy/2, yr[2] - dy/2, length.out = 5)
+centers <- expand.grid(x = x_cent, y = y_cent)
+
+text(centers$x, centers$y, labels = as.vector(Q), col = "red", cex = 0.8)
+```
+
+
+#### D. State your hypotheses, perform a quadrat test (the chi-squared test in spatstat is OK) and report whether you would reject or not reject the null hypothesis that the point pattern is consistent with an IRP at the significance level of 0.05.
+
+```{r warning=FALSE} 
+quadrat.test(ponderosa, nx = 5, ny = 5)
+```
+Since $0.09934 > 0.05$, we failed to reject $H_0$ There is no statistically significant evidence at the 5% level to reject complete spatial randomness, so the pattern is consistent with an (homogeneous) Poisson process.
+
+#### E. Now perform a nearest neighbor test of the ponderosa pine data to determine if the point pattern is consistent with an independent random process. This is the test outlined in the lecture video for Module 3 Lecture 4 and in Exercise 10. Use R as much as possible. Move formally through the hypothesis test and report your decision for a chosen significance level.
+
+```{r}
+lambda     <- intensity(ponderosa)       
+d_nn  <- nndist(ponderosa)         
+n     <- length(d_nn)           
+
+r_obs <- mean(d_nn)                 
+r_exp <- 1/(2 * sqrt(lambda))            
+
+var_r <- (4 - pi) / (4 * pi * lambda)    
+se    <- sqrt(var_r / n)           
+
+z     <- (r_obs - r_exp) / se       
+p_val <- 2 * (1 - pnorm(abs(z)))    
+
+ce    <- clarkevans.test(ponderosa, correction="none")
+
+cat(sprintf("Observed mean nn‐dist: %.4f\n", r_obs))
+cat(sprintf("Expected under CSR:  %.4f\n", r_exp))
+cat(sprintf("Z = %.3f,  p = %.4f\n\n", z, p_val))
+print(ce)
+```
+
+The observed mean nearest‐neighbor distance (6.8373) exceeded the CSR expectation (5.7735), giving Z = 3.663 (p = 0.0002) and Clark–Evans R = 1.1842 (p = 0.00025). Since p < 0.05 and |Z| > 1.96, we reject CSR, indicating the trees are significantly more regularly spaced than random.
+
+
+#### F. Plot and interpret the K function for the ponderosa data using the edge correction=’Ripley’)
+
+```{r}
+K_ripley <- Kest(ponderosa, correction = "Ripley")
+
+plot(K_ripley, main = "Ripley’s K Function for Ponderosa Data")
+abline(0, pi, lty = 2, col = "red")
+```
+
+The Ripley‐corrected K‐function (solid black) lies below the CSR expectation (dashed red) for a little, indicating that trees repel each other at small scales (regular spacing). Beyond that range the empirical K(r) converges on—and even slightly exceeds—the theoretical curve, showing that at larger distances the pattern behaves much like randomness (or very weak clustering), so overall the pines exhibit inhibition at short ranges but no strong departure from CSR at broader scales.
+
+
+#### G. Fit a confidence envelope around the expected K-function, plot the envelope function and interpret what you see.
+
+```{r}
+set.seed(123)
+env <- envelope(ponderosa,
+                fun = Kest,
+                nsim = 1000,
+                correction = "Ripley",
+                rank = 1) 
+
+plot(env, 
+     main = "Ripley’s K with 95% Simulation Envelope",
+     legendargs = list(x = "topleft", bty = "n"))
+```
+
+The simulation envelope shows that the observed K‐curve lies below the lower grey bound at small scales—strong evidence of inhibition (regular spacing)—and then remains within the envelope at broader scales, indicating no statistically significant deviation from CSR beyond that initial repulsion.
+
+#### H. Perform a MAD test of the K function with the ponderosa point pattern. Show your results and interpret them.
+
+```{r}
+set.seed(123)
+mad_env <- envelope(
+  ponderosa,
+  fun       = Kest,
+  nsim      = 1000,
+  correction= "Ripley",
+  global    = TRUE,
+  verbose   = FALSE
+)
+
+print(mad_env)
+```
+
+The simultaneous envelope test at a very stringent significance level (p=0.000999) shows the observed K‐curve dipping below the lower critical boundary at small distances, demonstrating significant inhibition among the trees at those scales. Beyond this initial range, the observed values lie entirely within the [lo, hi] band, indicating no significant departure from CSR at larger distances. Overall, the global MAD test confirms strong small‐scale regularity but otherwise supports a random Poisson pattern.
+
+
+### 2. There is a zipped folder “Calairsites” in the Module 3 datasets folder. The airmonitoringstations.shp file contains point locations for air quality monitoring stations in California (and a few in Mexico). The arb_california_airdistricts_aligned_03.shp file contains air resources board districts (polygons) for California. So here you have point and polygon data for California.
+
+#### A. Coerce the point and polygon data into spatstat (see Exercise 11). (NB– the point file has some point locations in Mexico. These will cause problems, Exclude them after you first read in the points shapefile by deleting observations where ZIPCODE==”xxxxx”.)
+
+```{r cache=TRUE}
+pts_sf <- st_read("Calairsites/airmonitoringstations.shp")
+pts_sf <- pts_sf[pts_sf$ZIPCODE != "XXXXX", ]   # replace "XXXXX" with the actual ZIPCODE marker for Mexico
+
+polys_sf <- st_read("Calairsites/arb_california_airdistricts_aligned_03.shp")
+
+pts_sf  <- st_transform(pts_sf,  st_crs(polys_sf))
+
+polys_union <- st_union(polys_sf)
+win <- as.owin(polys_union)
+
+coords  <- st_coordinates(pts_sf)
+sites_ppp <- ppp(x = coords[,1], y = coords[,2], window = win)
+
+summary(win) %>% str()
+
+summary(sites_ppp) %>% str()
+```
+
+
+#### B. Plot the point data over your study region and interpret the plot.
+
+```{r}
+plot(win, main = "Air Monitoring Stations in California ARB Districts", 
+     col = "lightgrey", border = "darkgrey")
+
+points(sites_ppp, pch = 16, col = "blue", cex = 0.6)
+```
+
+The monitoring stations are clearly concentrated in California’s population and pollution centers—particularly the Los Angeles Basin, the San Francisco Bay Area and the Central Valley—while vast mountain, desert and coastal regions have very few sites. This pattern reflects a strategic focus on areas of high human exposure and regulatory concern, leaving more remote or sparsely populated districts with minimal observational coverage.
+
+
+#### C. Use your knowledge of spatstat to perform first-order and second-order tests of stationarity in your point pattern data. Show all your code, plots & interpretation.
+
+```{r cache=TRUE}
+qt_sites <- quadrat.test(sites_ppp, nx = 6, ny = 3)
+print(qt_sites)
+plot(qt_sites, main="Quadrat Test for First‐Order Stationarity")
+
+ppm_null  <- ppm(sites_ppp ~ 1)
+ppm_trend <- ppm(sites_ppp ~ x + y)
+lrt       <- anova(ppm_null, ppm_trend, test="LRT")
+print(lrt)
+
+bw0        <- bw.diggle(sites_ppp)
+lambda_est <- density(sites_ppp,
+                      sigma      = bw0,
+                      edge       = TRUE,
+                      at         = "pixels",
+                      correction = "Diggle")
+
+
+v           <- lambda_est$v
+v[v <= 0]   <- min(v[v > 0])
+lambda_est$v <- v
+K_inhom <- Kinhom(sites_ppp,
+                  lambda     = lambda_est,
+                  correction = "Ripley")
+plot(K_inhom,
+     main = "Inhomogeneous Ripley’s K Function")
+abline(0, pi, lty=2, col="red")
+
+set.seed(123)
+env_inhom_trans <- envelope(
+  sites_ppp,
+  fun       = Kinhom,
+  nsim      = 1000,
+  simulate  = expression(rpoispp(lambda_est)),
+  global    = TRUE,
+  correction= "translate",
+  lambda    = lambda_est,
+  verbose   = FALSE
+)
+plot(env_inhom_trans,
+     main = "Global Envelope for Inhomogeneous K (translation)")
+
+```
+
+The quadrat‐count $\chi^2$‐test yielded $\chi^2 = 159.41$ on 13 degrees of freedom ($p < 2.2\times10^{-16}$), and the likelihood‐ratio test comparing the homogeneous Poisson model ($\sim 1$) to the trend model ($\sim x + y$) gave a deviance of 143.98 ($p < 2.2\times10^{-16}$), both decisively rejecting first‐order stationarity. After fitting a smooth intensity surface via Diggle’s edge‐corrected kernel (bandwidth selected by Diggle’s criterion) and computing the inhomogeneous Ripley’s $K$‐function with translation correction, the observed $\hat K_{\rm inhom}(r)$ remains entirely within the 95\% global Monte Carlo envelope based on 1 000 simulations of the fitted inhomogeneous Poisson process. Thus, once the large‐scale intensity trend is accounted for, there is no significant residual interaction, and the point pattern is consistent with an inhomogeneous Poisson process (second‐order stationarity holds).
+
+
+#### D. Conclude by telling me whether your data are consistent with an IRP.
+
+The point pattern of air‐monitoring stations clearly rejects complete spatial randomness, but after fitting and removing the smooth intensity trend the inhomogeneous Ripley’s K‐function remains within its global Monte Carlo envelope; hence, the data are consistent with an IRP.
+
+ 
+ 

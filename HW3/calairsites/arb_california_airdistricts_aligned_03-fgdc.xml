@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <idinfo>
+    <citation>
+      <citeinfo>
+        <origin/>
+        <origin/>
+        <pubdate>20040301</pubdate>
+        <title>California Air Districts, 2004</title>
+        <geoform>vector digital data</geoform>
+        <pubinfo>
+          <pubplace/>
+          <publish>California. Air Resources Board</publish>
+        </pubinfo>
+        <onlink>http://purl.stanford.edu/vc226fs6069</onlink>
+        <lworkcit>
+          <citeinfo>
+            <origin/>
+            <origin/>
+            <pubdate>20130313</pubdate>
+            <title>California Air Resources Board GIS Data</title>
+            <pubinfo>
+              <pubplace/>
+              <publish>California. Air Resources Board</publish>
+            </pubinfo>
+          </citeinfo>
+        </lworkcit>
+      </citeinfo>
+    </citation>
+    <descript>
+      <abstract>The California Air Districts layer is a polygon shapefile coverage representing the California air pollution control and air quality management districts, as defined in federal and state law. See 40 CFR, Chapter I Section 81, et seq., and California Health and Safety Code, Section 40000 et seq. Air districts identify the local and regional authorities who have primary responsibility for control of air pollution from sources that are not motor vehicles. This layer shows the air district boundaries and their names as of March 2004. Air Districts are designated pursuant to federal and state statute.</abstract>
+      <purpose>Air districts identify the local and regional authorities who have primary responsibility for control of air pollution from sources that are not motor vehicles. (Motor vehicles are the responsibility of the state Air Resources Board.)</purpose>
+    </descript>
+    <timeperd>
+      <timeinfo>
+        <sngdate>
+          <caldate>20040301</caldate>
+        </sngdate>
+      </timeinfo>
+      <current>publication date</current>
+    </timeperd>
+    <status>
+      <progress>Complete</progress>
+      <update>As needed</update>
+    </status>
+    <spdom>
+      <bounding>
+        <westbc>-124.506059</westbc>
+        <eastbc>-113.498638</eastbc>
+        <northbc>42.068938</northbc>
+        <southbc>32.423518</southbc>
+      </bounding>
+    </spdom>
+    <keywords>
+      <theme>
+        <themekt>lcsh</themekt>
+        <themekey>Air quality management</themekey>
+      </theme>
+      <theme>
+        <themekt>ISO 19115 Topic Categories</themekt>
+        <themekey>environment</themekey>
+        <themekey>climatologyMeteorologyAtmosphere</themekey>
+      </theme>
+      <place>
+        <placekt>geonames</placekt>
+        <placekey>California</placekey>
+      </place>
+      <temporal>
+        <tempkt>None</tempkt>
+        <tempkey>2004</tempkey>
+      </temporal>
+    </keywords>
+    <accconst>None</accconst>
+    <useconst>No restrictions on access or use.</useconst>
+    <ptcontac>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>California Air Resources Board; Planning and Technical Support Division</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing</addrtype>
+          <address>California Air Resources Board, AQPSD</address>
+          <city>Sacramento</city>
+          <state>CA</state>
+          <postal>95812</postal>
+          <country>US</country>
+        </cntaddr>
+      </cntinfo>
+    </ptcontac>
+    <datacred>Teale Data Center GIS Lab. California Air Resources Board. (2004). California Air Districts, 2004. California Air Resources Board. Available at: http://purl.stanford.edu/vc226fs6069.</datacred>
+    <native> Version 6.2 (Build 9200) ; Esri ArcGIS 10.4.1.5686</native>
+  </idinfo>
+  <spdoinfo>
+    <direct>Vector</direct>
+    <ptvctinf>
+      <sdtsterm>
+        <sdtstype>GT-polygon composed of chains</sdtstype>
+        <ptvctcnt>47</ptvctcnt>
+      </sdtsterm>
+    </ptvctinf>
+  </spdoinfo>
+  <eainfo>
+    <detailed xmlns="">
+      <enttyp>
+        <enttypl>arb_california_airdistricts_aligned_03</enttypl>
+      </enttyp>
+      <attr>
+        <attrlabl>FID</attrlabl>
+        <attrdef>Internal feature number.</attrdef>
+        <attrdefs>ESRI</attrdefs>
+        <attrdomv>
+          <udom>Sequential unique whole numbers that are automatically generated.</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>Shape</attrlabl>
+        <attrdef>Feature geometry.</attrdef>
+        <attrdefs>ESRI</attrdefs>
+        <attrdomv>
+          <udom>Coordinates defining the features.</udom>
+        </attrdomv>
+      </attr>
+      <attr>
+        <attrlabl>ADISA_</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>ADISA_ID</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>NAME</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>DIST_TYPE</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>DISPLAY</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>disti_area</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>DIS</attrlabl>
+      </attr>
+      <attr>
+        <attrlabl>DISN</attrlabl>
+      </attr>
+    </detailed>
+  </eainfo>
+  <distinfo>
+    <distrib>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>Stanford Geospatial Center</cntorg>
+        </cntorgp>
+        <cntaddr>
+          <addrtype>mailing and physical</addrtype>
+          <address>Mitchell Bldg. 2nd floor</address>
+          <address>397 Panama Mall</address>
+          <city>Stanford</city>
+          <state>California</state>
+          <postal>94305</postal>
+          <country>US</country>
+        </cntaddr>
+        <cntvoice>650-723-2746</cntvoice>
+        <cntemail>brannerlibrary@stanford.edu</cntemail>
+      </cntinfo>
+    </distrib>
+    <distliab>No restrictions on access or use.</distliab>
+  </distinfo>
+  <metainfo>
+    <metd>20171121</metd>
+    <metc>
+      <cntinfo>
+        <cntorgp>
+          <cntorg>Stanford Geospatial Center</cntorg>
+        </cntorgp>
+        <cntpos>Metadata Analyst</cntpos>
+        <cntaddr>
+          <addrtype>physical</addrtype>
+          <address>Branner Earth Sciences Library</address>
+          <address>Mitchell Building, 2nd Floor</address>
+          <address>397 Panama Mall</address>
+          <city>Stanford</city>
+          <state>California</state>
+          <postal>94305</postal>
+        </cntaddr>
+        <cntvoice>650-723-2746</cntvoice>
+        <cntemail>brannerlibrary@stanford.edu</cntemail>
+      </cntinfo>
+    </metc>
+    <metstdn>FGDC Content Standard for Digital Geospatial Metadata</metstdn>
+    <metstdv>FGDC-STD-001-1998</metstdv>
+    <mettc>local time</mettc>
+  </metainfo>
+</metadata>

@@ -1,0 +1,199 @@
+---
+title: "HW5"
+author: "Haojie Liu"
+date: "2025-06-08"
+output: pdf_document
+---
+
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(sf)
+library(classInt)
+library(tmap)
+library(spdep)
+library(spatialreg)
+library(spgwr)
+library(sp)
+```
+
+
+### The zipped file USCovid contains county level data on COVID deaths per 100,000 of the population registered over the first year of the pandemic (roughly March 2020 – February 2021). The data in this file have all been normalized. Here are the meanings of the variables of interest:
+
+
+#### Generate a quantile map of the Covid death rate and report what you see.
+
+```{r}
+
+covid_data <- st_read("USCovid/totals_apr20_feb21.shp")
+
+covid_data <- covid_data %>%
+  mutate(death_quantile = cut(cases_per_,
+                               breaks = quantile(cases_per_, probs = seq(0, 1, 0.2), na.rm = TRUE),
+                               include.lowest = TRUE,
+                               labels = c("Q1", "Q2", "Q3", "Q4", "Q5")))
+
+tmap_mode("plot")
+tm_shape(covid_data) +
+  tm_fill("death_quantile", palette = "Reds", title = "COVID Death Rate Quantiles") +
+  tm_borders(lwd = 0.1) +
+  tm_layout(title = "Quantile Map of COVID Death Rate", legend.outside = TRUE)
+
+```
+
+#### Is there evidence of spatial autocorrelation in the Covid death rate data? (Use a reasonable spatial weights scheme.)
+
+```{r}
+nb <- poly2nb(covid_data, queen = TRUE)
+lw <- nb2listw(nb, style = "W", zero.policy = TRUE)
+
+moran_result <- moran.test(covid_data$cases_per_, lw, zero.policy = TRUE)
+print(moran_result)
+
+```
+
+The Moran’s I test reveals strong evidence of spatial autocorrelation in county-level COVID death rates across the U.S. With a Moran’s I value of 0.386 and a highly significant p-value (< 2.2e-16), the results indicate that counties with similar COVID death rates are geographically clustered rather than randomly distributed. This suggests that spatial factors—such as regional health infrastructure, demographic composition, or policy responses—may be influencing the spread and severity of COVID-19 outcomes.
+
+#### Is there evidence of significant local spatial clusters of Covid death rates?
+
+```{r}
+
+local_moran <- localmoran(covid_data$cases_per_, lw, zero.policy = TRUE)
+
+covid_data$local_I <- local_moran[,1]
+covid_data$local_p <- local_moran[,5]
+
+covid_data$cluster_type <- case_when(
+  covid_data$local_I > 0 & covid_data$cases_per_ > mean(covid_data$cases_per_, na.rm = TRUE) & covid_data$local_p < 0.05 ~ "High-High",
+  covid_data$local_I > 0 & covid_data$cases_per_ < mean(covid_data$cases_per_, na.rm = TRUE) & covid_data$local_p < 0.05 ~ "Low-Low",
+  covid_data$local_I < 0 & covid_data$cases_per_ > mean(covid_data$cases_per_, na.rm = TRUE) & covid_data$local_p < 0.05 ~ "High-Low",
+  covid_data$local_I < 0 & covid_data$cases_per_ < mean(covid_data$cases_per_, na.rm = TRUE) & covid_data$local_p < 0.05 ~ "Low-High",
+  TRUE ~ "Not significant"
+)
+
+tmap_mode("plot")
+tm_shape(covid_data) +
+  tm_fill("cluster_type", palette = "Set1", title = "LISA Cluster Types") +
+  tm_borders(lwd = 0.1) +
+  tm_layout(title = "Local Moran's I: COVID Death Rate Clusters", legend.outside = TRUE)
+
+```
+
+The Local Moran’s I (LISA) analysis provides clear evidence of significant local spatial clusters in COVID-19 death rates across U.S. counties. High-high clusters, where counties with high death rates are surrounded by similarly high-rate neighbors, are prominently found in the Deep South, southern Texas, and parts of the Southwest. In contrast, low-low clusters, indicating consistently low death rates, are concentrated in regions such as the West Coast, Northeast, and Upper Midwest. Additionally, several spatial outliers (high-low and low-high counties) suggest localized deviations from surrounding patterns. These findings highlight that COVID-19 mortality was not randomly distributed, but instead shaped by strong regional dynamics and neighboring effects.
+
+#### Regress the Covid death rate against the six independent variables given above. Show and interpret your regression output (partial regression coefficients, goodness of fit statistics).
+
+```{r}
+
+
+model <- lm(cases_per_ ~ pct_poc + pct_smoker + pct_povert + pct_obsese + pct_65plus + per_dem, data = covid_data)
+
+summary(model)
+
+```
+
+A multiple linear regression was conducted to examine the relationship between county-level COVID-19 death rates and six explanatory variables. The model was statistically significant overall ($F(6, 3101) = 86.38$, $p < 0.001$), with an adjusted $R^2$ of 0.1415, indicating that approximately 14% of the variation in COVID-19 death rates is explained by the predictors.
+
+The results suggest that counties with higher proportions of people of color, individuals in poverty, obese residents, and elderly populations tend to have higher COVID-19 death rates. In contrast, a higher share of Democratic voters is associated with lower death rates. The smoking rate did not show a significant association with mortality after controlling for other factors. These findings highlight the role of both demographic and political characteristics in shaping county-level pandemic outcomes.
+
+
+#### Capture and plot the residuals from your regression. Is there evidence of spatial autocorrelation in the residuals?
+
+```{r}
+
+covid_data$resid <- residuals(model)
+
+tmap_mode("plot")
+tm_shape(covid_data) +
+  tm_fill("resid", palette = "-RdBu", title = "Regression Residuals") +
+  tm_borders(lwd = 0.1) +
+  tm_layout(title = "Spatial Distribution of Residuals", legend.outside = TRUE)
+
+
+moran.test(covid_data$resid, lw, zero.policy = TRUE)
+
+```
+
+To evaluate whether spatial autocorrelation remains after accounting for explanatory variables, we examined the residuals from the multiple linear regression. A spatial map of the residuals reveals clear regional patterns, suggesting potential spatial structure not captured by the model.
+
+This was confirmed by Moran’s I test, which indicated significant positive spatial autocorrelation in the residuals ($I = 0.326$, $p < 0.001$). This implies that the model's residuals are not randomly distributed and that spatial dependencies persist. Therefore, a spatial regression model (such as a spatial lag or spatial error model) may be more appropriate for accurately modeling the COVID-19 death rate at the county level.
+
+
+#### Run spatial lag and spatial error models. Interpret the output from these and show if one of these models fits the data better than the other.
+ 
+```{r}
+
+formula <- cases_per_ ~ pct_poc + pct_smoker + pct_povert + pct_obsese + pct_65plus + per_dem
+
+lag_model <- lagsarlm(formula, data = covid_data, listw = lw, zero.policy = TRUE)
+
+error_model <- errorsarlm(formula, data = covid_data, listw = lw, zero.policy = TRUE)
+
+summary(lag_model)
+summary(error_model)
+
+AIC(lag_model, error_model)
+
+```
+ 
+To address residual spatial autocorrelation observed in the OLS model, both spatial lag and spatial error models were estimated. The spatial lag model incorporates spatial dependence in the dependent variable via a spatially lagged term, while the spatial error model accounts for spatial dependence in the error term.
+
+In the spatial lag model, the spatial autoregressive coefficient ($\rho = 0.524$) was highly significant ($p < 0.001$), indicating that COVID-19 death rates in a county are positively influenced by rates in neighboring counties. Key predictors such as the percent of people of color, poverty rate, obesity rate, and elderly population remained significant. The AIC for this model was 7725.5, a notable improvement over the OLS baseline (AIC = 8329).
+
+The spatial error model also showed strong performance. The spatial error coefficient ($\lambda = 0.546$) was significant ($p < 0.001$), suggesting unobserved spatial processes affect the residuals. This model had a slightly lower AIC of 7699.7, indicating a better overall fit than both the lag and OLS models.
+
+Both models outperform the standard OLS regression. However, based on the AIC comparison and slightly lower residual variance, the spatial error model provides the best fit. This suggests that spatial correlation in the data primarily arises from omitted spatially structured variables rather than direct spatial interaction in the dependent variable.
+
+
+### Use the zipped stlouis.shp file and the packages sf, sp, spdep, spgwr & tmap and any others you might need for spatial analysis and mapping.
+
+#### Run a non-spatial regression of the homicide rate (HR8893) on police expenditure (PE87) and a local deprivation index (RDAC90) and interpret the output.
+
+```{r}
+stlouis <- st_read("stlouis/stlouis.shp")
+
+model_ols <- lm(HR8893 ~ PE87 + RDAC90, data = stlouis)
+
+summary(model_ols)
+```
+
+The results of the non-spatial regression indicate that both police expenditure and local deprivation are significant predictors of neighborhood-level homicide rates in St. Louis. The model explains approximately 39% of the variation in homicide rates, suggesting a moderately strong fit. Specifically, higher levels of police expenditure are associated with higher homicide rates, which may reflect reactive resource allocation to high-crime areas rather than a causal effect. Additionally, local deprivation has a strong and statistically significant positive association with homicide, indicating that more socioeconomically deprived neighborhoods tend to experience substantially higher levels of violence. These findings underscore the importance of underlying structural conditions, such as poverty and inequality, in shaping patterns of violent crime.
+
+#### Use the R package spgwr to show how the R2 and the partial regression coefficients in your model vary across your study region. Report and interpret all your output.
+
+
+```{r}
+stlouis_sp <- as(stlouis, "Spatial")
+
+coords <- coordinates(stlouis_sp)
+
+bw <- gwr.sel(HR8893 ~ PE87 + RDAC90, data = stlouis_sp, coords = coords)
+
+# Fit GWR model
+gwr_model <- gwr(HR8893 ~ PE87 + RDAC90,
+                 data = stlouis_sp,
+                 coords = coords,
+                 bandwidth = bw,
+                 hatmatrix = TRUE,
+                 se.fit = TRUE)
+
+gwr_model
+
+gwr_output <- as.data.frame(gwr_model$SDF)
+
+stlouis$gwr_r2       <- gwr_output$localR2
+stlouis$coef_PE87    <- gwr_output$PE87
+stlouis$coef_RDAC90  <- gwr_output$RDAC90
+stlouis
+```
+
+
+The Geographically Weighted Regression (GWR) analysis reveals that the effects of police expenditure (PE87) and local deprivation (RDAC90) on homicide rates (HR8893) vary modestly across the study region. Using a fixed bandwidth of approximately 507—determined via cross-validation—the model produced a quasi-global \$R^2\$ of 0.409, closely matching the global OLS model but allowing for spatial variation in coefficient estimates. Across neighborhoods, local \$R^2\$ values remained stable (around 0.418), indicating a fairly consistent model fit throughout the region.
+
+The spatial distribution of the coefficients shows that both predictors have a uniformly positive relationship with homicide, but with small variations in magnitude. The effect of police expenditure ranged from about 1.58 to 1.61, suggesting that in all areas, higher spending is associated with higher homicide rates—likely reflecting reactive spending patterns rather than prevention. The coefficient for local deprivation ranged from about 5.24 to 5.45, consistently indicating that more deprived neighborhoods experience higher levels of violent crime. These results underscore that while the direction of influence is stable, GWR helps uncover subtle spatial nuances that a global model would miss.
+
+
+
+
+
+
+
